@@ -41,7 +41,7 @@ app.post("/api/shorturl", function(req, res) {
   dns.lookup(myUrl.host, options, (err, addresses) => {
     if (err) {
       // if not valid throw error
-      console.log(err);
+      res.json({ error: 'invalid url' });
     } else {
       console.log(addresses);
       // if valid check if already exist in db
