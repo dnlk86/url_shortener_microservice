@@ -54,26 +54,24 @@ app.post("/api/shorturl", function(req, res) {
       res.json({ error: 'invalid url' });
     } else {
       // if valid check if already exist in db
-      ShortUrl.findOne({ original_url: originalUrl }).then(function(err, retrievedUrl) {
-        if (err) {
-          console.log(err);
+      ShortUrl.findOne({ "original_url": originalUrl }).then(retrievedUrl => {
+        if (!retrievedUrl) {
+          console.log("error: url not found");
+          // find last inserted short_url
+          // insert new value
+          let record = new ShortUrl({
+            original_url: originalUrl,
+            short_url: 1
+          });
+          record.save().then((err, data) => {
+            if (err) {
+              console.log("err", err);
+            } else {
+              console.log("data", data);
+            }
+          });
         } else {
-          console.log(retrievedUrl);
-          if (!retrievedUrl) {
-            // if not insert new value
-            // find last inserted short_url
-            let record = new ShortUrl({
-              original_url: originalUrl,
-              short_url: 1
-            });
-            record.save().then((err, data) => {
-              if (err) {
-                console.log("err", err);
-              } else {
-                console.log("data", data);
-              }
-            });
-          }
+          console.log("retrievedUrl", retrievedUrl);
         }
       });
       // return newly inserted val in in json
