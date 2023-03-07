@@ -4,8 +4,19 @@ const app = express();
 const cors = require('cors');
 const bodyParser = require("body-parser");
 const dns = require("dns");
-// const url = require("url");
 var mongoose = require("mongoose");
+
+// mongo db connection
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log(`CONNECTED TO MONGO!`);
+  })
+  .catch((err) => {
+    console.log(`OH NO! MONGO CONNECTION ERROR!`);
+    console.log(err);
+  });
+
+let ShortUrl = require("./src/models/short_url");
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -23,8 +34,7 @@ app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
 
-// mongo db connection
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+
 
 // dns options
 const options = { all: true };
@@ -35,19 +45,39 @@ app.get('/api/hello', function(req, res) {
 });
 
 app.post("/api/shorturl", function(req, res) {
+  let originalUrl = req.body.url;
+  let myUrl = new URL(originalUrl);
   // check if valid url
-  let myUrl = new URL(req.body.url);
-  // console.log(myUrl.host);
   dns.lookup(myUrl.host, options, (err, addresses) => {
     if (err) {
       // if not valid throw error
       res.json({ error: 'invalid url' });
     } else {
-      console.log(addresses);
       // if valid check if already exist in db
-      // if not insert new value
+      ShortUrl.findOne({ original_url: originalUrl }).then(function(err, retrievedUrl) {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log(retrievedUrl);
+          if (!retrievedUrl) {
+            // if not insert new value
+            // find last inserted short_url
+            let record = new ShortUrl({
+              original_url: originalUrl,
+              short_url: 1
+            });
+            record.save().then((err, data) => {
+              if (err) {
+                console.log("err", err);
+              } else {
+                console.log("data", data);
+              }
+            });
+          }
+        }
+      });
       // return newly inserted val in in json
-    };
+    }
   });
 });
 
