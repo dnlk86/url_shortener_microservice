@@ -34,8 +34,6 @@ app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
 
-
-
 // dns options
 const options = { all: true };
 
@@ -46,7 +44,12 @@ app.get('/api/hello', function(req, res) {
 
 app.post("/api/shorturl", function(req, res) {
   let originalUrl = req.body.url;
-  let myUrl = new URL(originalUrl);
+  try {
+    var myUrl = new URL(originalUrl)
+  } catch {
+    res.json({ error: 'invalid url' });
+    return;
+  }
   // check if valid url
   dns.lookup(myUrl.host, options, (err, addresses) => {
     if (err) {
@@ -56,25 +59,32 @@ app.post("/api/shorturl", function(req, res) {
       // if valid check if already exist in db
       ShortUrl.findOne({ "original_url": originalUrl }).then(retrievedUrl => {
         if (!retrievedUrl) {
-          console.log("error: url not found");
+          console.log("Url not found, inserting a new document in the DB.");
           // find last inserted short_url
-          // insert new value
-          let record = new ShortUrl({
-            original_url: originalUrl,
-            short_url: 1
-          });
-          record.save().then((err, data) => {
-            if (err) {
-              console.log("err", err);
+          let lastRecord = ShortUrl.findOne().sort({ "short_url": -1 }).then(lastRecord => {
+            let n;
+            if (!lastRecord) {
+              n = 1;
             } else {
-              console.log("data", data);
+              n = Number(lastRecord["short_url"]) + 1;
             }
+            // insert new value
+            let record = new ShortUrl({
+              original_url: originalUrl,
+              short_url: n
+            });
+            record.save().then(data => {
+              if (!data) {
+                console.log("error: record not saved!");
+              } else {
+                res.json({ "original_url": data["original_url"], "short_url": data["short_url"] });
+              }
+            });
           });
         } else {
-          console.log("retrievedUrl", retrievedUrl);
+          res.json({ "original_url": retrievedUrl["original_url"], "short_url": retrievedUrl["short_url"] });
         }
       });
-      // return newly inserted val in in json
     }
   });
 });
