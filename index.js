@@ -66,7 +66,7 @@ app.post("/api/shorturl", function(req, res) {
             if (!lastRecord) {
               n = 1;
             } else {
-              n = Number(lastRecord["short_url"]) + 1;
+              n = lastRecord["short_url"] + 1;
             }
             // insert new value
             let record = new ShortUrl({
