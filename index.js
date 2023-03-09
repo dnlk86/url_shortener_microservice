@@ -90,8 +90,11 @@ app.post("/api/shorturl", function(req, res) {
 });
 
 app.get("/api/shorturl/:url?", function(req, res) {
+  let url = Number(req.params.url);
   // if param is valid retrieve extended url from db
-  // else throw error
+  ShortUrl.findOne({"short_url": url})
+    .then(data => {res.redirect(data["original_url"])})
+    .catch(() => res.json({ error: 'invalid url' }));
 });
 
 app.listen(port, function() {
